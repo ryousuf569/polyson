@@ -1,0 +1,201 @@
+class,sound_id,name,subclass,subclass_label,subclass_size,is_largest_subclass,similarity_to_center,umap_x,umap_y
+glass,115916,"Glass Hits floor, breaks, shatters.wav",1,a single sharp instant crack,61,0,0.814,12.4176,4.4508
+glass,141563,Glass Break,1,a single sharp instant crack,61,0,0.5791,13.8305,6.0622
+glass,156578,"Picture frame dropped on wood floor, shatters.wav",0,a long sustained shattering with debris,78,1,0.8109,12.7201,5.5117
+glass,156579,"Pick up shattered picture frame, glass shards.wav",2,a crunchy gritty texture,17,0,0.5531,12.1835,5.531
+glass,174750,accidental glass breaking.aif,1,a single sharp instant crack,61,0,0.7342,13.416,3.0865
+glass,199906,Breaking Glass Stereo,3,a bright high-pitched metallic ring,44,0,0.8421,10.0689,7.5166
+glass,20133,breaking_glass.wav,0,a long sustained shattering with debris,78,1,0.8085,13.5985,5.702
+glass,202093,Bottle Shattering.wav,0,a long sustained shattering with debris,78,1,0.9359,12.2655,4.7659
+glass,203368,glass-shattering-hit_01.ogg,0,a long sustained shattering with debris,78,1,0.7612,11.8471,8.2694
+glass,203369,glass-in-bucket_3thumps.ogg,0,a long sustained shattering with debris,78,1,0.858,12.3482,7.594
+glass,203370,glass-in-bucket_01.ogg,0,a long sustained shattering with debris,78,1,0.867,12.0359,7.7996
+glass,203371,glass-explosion_01.ogg,0,a long sustained shattering with debris,78,1,0.7441,12.6143,7.4983
+glass,203372,glass-shattering_04.ogg,0,a long sustained shattering with debris,78,1,0.9122,12.0399,7.7364
+glass,203373,glass-shattering_03.ogg,0,a long sustained shattering with debris,78,1,0.9039,11.879,7.7125
+glass,203374,glass-shattering_02.ogg,0,a long sustained shattering with debris,78,1,0.8788,11.9496,8.0188
+glass,203375,glass-shattering_01.ogg,0,a long sustained shattering with debris,78,1,0.8877,12.1746,7.4978
+glass,203377,glass-shattering_05.ogg,3,a bright high-pitched metallic ring,44,0,0.8911,11.5152,8.0985
+glass,219837,Glass Drop 4,0,a long sustained shattering with debris,78,1,0.7153,13.9722,7.4663
+glass,219838,Glass Drop 3,0,a long sustained shattering with debris,78,1,0.768,13.9633,7.2529
+glass,219839,Glass Drop 2,1,a single sharp instant crack,61,0,0.63,14.0353,6.6081
+glass,219840,Glass Drop 1,1,a single sharp instant crack,61,0,0.6099,13.8165,6.7759
+glass,219842,Glass Drop 7,0,a long sustained shattering with debris,78,1,0.8655,13.2285,7.0706
+glass,219843,Glass Drop 6,0,a long sustained shattering with debris,78,1,0.8199,13.8859,7.3786
+glass,219844,Glass Drop 5,0,a long sustained shattering with debris,78,1,0.8189,13.7847,7.2773
+glass,219845,Glass Shatter 2,0,a long sustained shattering with debris,78,1,0.7978,13.897,7.6245
+glass,219846,Glass Shatter 1,0,a long sustained shattering with debris,78,1,0.9414,13.3425,6.7591
+glass,219847,Glass Shatter 3,0,a long sustained shattering with debris,78,1,0.7742,13.9011,7.5829
+glass,219940,Glass Shatter Mix,0,a long sustained shattering with debris,78,1,0.81,13.7256,7.6875
+glass,221528,Glass Break,0,a long sustained shattering with debris,78,1,0.8932,11.2096,5.2786
+glass,233605,Breaking Glass #3.wav,1,a single sharp instant crack,61,0,0.7245,13.1685,5.2774
+glass,233607,Breaking Glass #1.wav,1,a single sharp instant crack,61,0,0.8323,13.0072,5.0693
+glass,250709,Glass break 2,0,a long sustained shattering with debris,78,1,0.8515,11.8031,5.757
+glass,250710,Glass break 1,1,a single sharp instant crack,61,0,0.8001,12.2484,5.1696
+glass,260432,Glass Break - Small Jar 02,3,a bright high-pitched metallic ring,44,0,0.8271,11.0387,6.9075
+glass,260433,Glass Break - Small Jar 01,0,a long sustained shattering with debris,78,1,0.8957,11.5645,6.7494
+glass,260434,Glass Break - Medium Jar,0,a long sustained shattering with debris,78,1,0.8803,11.4544,6.6428
+glass,267889,Breaking-Glass.wav,0,a long sustained shattering with debris,78,1,0.8801,11.7845,6.8832
+glass,321143,Concrete and Glass breaking in dumpster,0,a long sustained shattering with debris,78,1,0.6509,13.5436,7.7662
+glass,322602,Small Glass Break,0,a long sustained shattering with debris,78,1,0.835,10.9905,6.0619
+glass,330800,Shattering Glass (Small),1,a single sharp instant crack,61,0,0.8353,12.5088,5.1421
+glass,336425,Glass Shattering and Falling,1,a single sharp instant crack,61,0,0.6488,12.9394,4.1121
+glass,344267,"Glass Smash, Bottle, B.wav",1,a single sharp instant crack,61,0,0.704,12.5154,5.0721
+glass,344269,"Glass Smash, Bottle, H.wav",1,a single sharp instant crack,61,0,0.8226,12.3894,5.2379
+glass,344270,"Glass Smash, Bottle, G.wav",1,a single sharp instant crack,61,0,0.899,12.4119,4.9095
+glass,349240,Glass Break 2,0,a long sustained shattering with debris,78,1,0.8313,13.2858,5.5566
+glass,349905,Slow Motion Glass Shatter,1,a single sharp instant crack,61,0,0.5936,13.7351,5.8752
+glass,368324,Glass Hit (12).wav,3,a bright high-pitched metallic ring,44,0,0.9652,9.9584,8.6415
+glass,368328,Glass Hit (16).wav,3,a bright high-pitched metallic ring,44,0,0.7756,10.4051,8.8674
+glass,368330,Glass Hit (14).wav,3,a bright high-pitched metallic ring,44,0,0.9122,9.7965,9.1069
+glass,368331,Glass Hit (13).wav,3,a bright high-pitched metallic ring,44,0,0.9429,9.9767,8.8777
+glass,368333,Glass Hit (17).wav,3,a bright high-pitched metallic ring,44,0,0.9531,10.4403,8.4653
+glass,368334,Glass Hit (35).wav,3,a bright high-pitched metallic ring,44,0,0.9478,9.3119,8.5749
+glass,368335,Glass Hit (36).wav,3,a bright high-pitched metallic ring,44,0,0.9343,9.7114,8.1916
+glass,368336,Glass Hit (3).wav,3,a bright high-pitched metallic ring,44,0,0.941,9.6652,8.4642
+glass,368337,Glass Hit (30).wav,3,a bright high-pitched metallic ring,44,0,0.9197,10.0047,8.8898
+glass,368338,Glass Hit (28).wav,3,a bright high-pitched metallic ring,44,0,0.9016,9.6693,8.8678
+glass,368340,Glass Hit (33).wav,3,a bright high-pitched metallic ring,44,0,0.746,8.8552,8.8045
+glass,368341,Glass Hit (34).wav,3,a bright high-pitched metallic ring,44,0,0.9218,9.4052,8.8484
+glass,368342,Glass Hit (31).wav,3,a bright high-pitched metallic ring,44,0,0.8187,9.6886,9.3016
+glass,368343,Glass Hit (32).wav,3,a bright high-pitched metallic ring,44,0,0.8339,8.846,9.2057
+glass,368344,Glass Hit (21).wav,3,a bright high-pitched metallic ring,44,0,0.9196,10.0214,9.3184
+glass,368345,Glass Hit (20).wav,3,a bright high-pitched metallic ring,44,0,0.9241,10.0222,8.1206
+glass,368347,Glass Hit (19).wav,3,a bright high-pitched metallic ring,44,0,0.8615,10.3571,8.8065
+glass,368349,Glass Hit (24).wav,2,a crunchy gritty texture,17,0,0.7898,9.8108,9.4099
+glass,368350,Glass Hit (23).wav,3,a bright high-pitched metallic ring,44,0,0.8997,10.0594,8.9484
+glass,368352,Glass Hit (27).wav,3,a bright high-pitched metallic ring,44,0,0.9426,10.0104,9.0258
+glass,368353,Glass Hit (26).wav,2,a crunchy gritty texture,17,0,0.786,9.8525,9.5581
+glass,368354,Glass Hit (5).wav,3,a bright high-pitched metallic ring,44,0,0.9206,10.2675,9.0329
+glass,368355,Glass Hit (4).wav,3,a bright high-pitched metallic ring,44,0,0.8766,10.2483,8.5325
+glass,368356,Glass Hit (7).wav,3,a bright high-pitched metallic ring,44,0,0.8743,10.0371,8.3298
+glass,371091,glass break 4.wav,0,a long sustained shattering with debris,78,1,0.8693,13.022,7.2288
+glass,371092,glass break 3.wav,0,a long sustained shattering with debris,78,1,0.8941,12.8574,7.2416
+glass,371094,Glass Break 1.wav,0,a long sustained shattering with debris,78,1,0.843,13.3143,5.8184
+glass,390700,Breaking Glass 12.mp3,1,a single sharp instant crack,61,0,0.9074,14.441,4.8782
+glass,390701,Breaking Glass 11.mp3,0,a long sustained shattering with debris,78,1,0.9209,13.0533,5.2708
+glass,390702,Breaking Glass 10.mp3,1,a single sharp instant crack,61,0,0.936,13.5747,4.9625
+glass,390703,Breaking Glass 1.MP3,1,a single sharp instant crack,61,0,0.9394,14.2058,5.1221
+glass,390704,Breaking Glass 16.mp3,1,a single sharp instant crack,61,0,0.8535,14.0303,4.6885
+glass,390705,Breaking Glass 15.mp3,1,a single sharp instant crack,61,0,0.9286,13.8732,4.4561
+glass,390706,Breaking Glass 14.mp3,1,a single sharp instant crack,61,0,0.9337,13.6935,4.967
+glass,390707,Breaking Glass 13.mp3,1,a single sharp instant crack,61,0,0.8857,14.6151,5.2559
+glass,390708,Breaking Glass 18.mp3,1,a single sharp instant crack,61,0,0.9197,13.914,4.5932
+glass,390709,Breaking Glass 17.mp3,1,a single sharp instant crack,61,0,0.9238,13.2844,4.7615
+glass,390714,Breaking Glass 7.mp3,1,a single sharp instant crack,61,0,0.841,13.704,4.7827
+glass,390715,Breaking Glass 8.mp3,1,a single sharp instant crack,61,0,0.8838,14.3351,5.1714
+glass,390716,Breaking Glass 5.mp3,1,a single sharp instant crack,61,0,0.9049,13.3333,5.1743
+glass,390718,Breaking Glass 9.mp3,1,a single sharp instant crack,61,0,0.918,13.3204,4.7458
+glass,390719,Breaking Glass 21.mp3,1,a single sharp instant crack,61,0,0.8355,14.2562,4.4969
+glass,390720,Breaking Glass 20.mp3,1,a single sharp instant crack,61,0,0.909,14.1884,5.101
+glass,390721,Breaking Glass 2.mp3,1,a single sharp instant crack,61,0,0.8013,14.6236,5.131
+glass,390722,Breaking Glass 19.mp3,1,a single sharp instant crack,61,0,0.9285,13.5457,4.4172
+glass,390723,Breaking Glass 25.mp3,1,a single sharp instant crack,61,0,0.6838,14.809,5.2487
+glass,390725,Breaking Glass 24.mp3,1,a single sharp instant crack,61,0,0.8637,14.7978,5.0239
+glass,390726,Breaking Glass 23.mp3,1,a single sharp instant crack,61,0,0.8327,14.7667,5.0697
+glass,390727,Breaking Glass 22.mp3,1,a single sharp instant crack,61,0,0.927,14.3619,4.9122
+glass,390728,Breaking Glass 4.mp3,1,a single sharp instant crack,61,0,0.8944,14.3943,4.624
+glass,390729,Breaking Glass 3.mp3,1,a single sharp instant crack,61,0,0.9083,13.4159,4.8163
+glass,404923,breaking glass with feet.wav,1,a single sharp instant crack,61,0,0.7679,12.8012,3.961
+glass,434437,Glass Smash 12,1,a single sharp instant crack,61,0,0.9007,13.1678,2.9009
+glass,434438,Glass Smash 11,1,a single sharp instant crack,61,0,0.8896,12.6188,3.0985
+glass,434439,Glass Smash 10,1,a single sharp instant crack,61,0,0.8754,12.7455,2.9695
+glass,434440,Glass Smash 1,1,a single sharp instant crack,61,0,0.8706,12.7314,2.9113
+glass,434442,Glass Smash 15,1,a single sharp instant crack,61,0,0.8857,12.8407,2.9643
+glass,434443,Glass Smash 14,1,a single sharp instant crack,61,0,0.8849,12.6341,2.7986
+glass,434444,Glass Smash 13,1,a single sharp instant crack,61,0,0.8797,12.6466,2.8524
+glass,434445,Glass Smash 4,1,a single sharp instant crack,61,0,0.6721,12.8062,2.6235
+glass,434446,Glass Smash 3,1,a single sharp instant crack,61,0,0.8727,12.9963,2.5762
+glass,434448,Glass Smash 7,1,a single sharp instant crack,61,0,0.6698,12.9283,2.7308
+glass,434449,Glass Smash 6,1,a single sharp instant crack,61,0,0.8175,12.9125,2.5637
+glass,434450,Glass Smash 5,1,a single sharp instant crack,61,0,0.8725,12.9723,2.653
+glass,452667,window break with axe glass shatter in trailer.wav,0,a long sustained shattering with debris,78,1,0.8247,13.2999,6.2609
+glass,453499,neon tube smash explode shatter glass debris.flac,0,a long sustained shattering with debris,78,1,0.8344,12.7062,4.6278
+glass,465946,Glass Breaking,0,a long sustained shattering with debris,78,1,0.8797,11.6179,4.9399
+glass,486166,Glass breaking,0,a long sustained shattering with debris,78,1,0.8558,11.0398,5.2024
+glass,521339,ZXAudiocraft - Glass - Coconut Shaker 011.wav,2,a crunchy gritty texture,17,0,0.7993,9.0448,9.4636
+glass,521343,ZXAudiocraft - Glass - Hit 032.wav,0,a long sustained shattering with debris,78,1,0.8111,12.5261,5.9065
+glass,521344,ZXAudiocraft - Glass - Hit 030.wav,1,a single sharp instant crack,61,0,0.8077,12.9891,4.9451
+glass,521345,ZXAudiocraft - Glass - Debris 023.wav,3,a bright high-pitched metallic ring,44,0,0.8341,8.434,9.1361
+glass,529301,Glass Break.boaay,1,a single sharp instant crack,61,0,0.6386,13.7166,5.5286
+glass,544105,Glass Breaking.wav,1,a single sharp instant crack,61,0,0.8169,11.9013,4.7666
+glass,546661,Breaking Glass 03.wav,0,a long sustained shattering with debris,78,1,0.6769,12.6784,6.2148
+glass,546662,Breaking Glass 06.wav,0,a long sustained shattering with debris,78,1,0.6638,12.5866,6.2035
+glass,546663,Breaking Glass 04.wav,0,a long sustained shattering with debris,78,1,0.8352,10.5365,6.1085
+glass,546664,Breaking Glass 09.wav,0,a long sustained shattering with debris,78,1,0.554,12.2984,8.3384
+glass,546665,Breaking Glass 08.wav,3,a bright high-pitched metallic ring,44,0,0.7279,12.0457,8.4825
+glass,546666,Breaking Glass 05.wav,3,a bright high-pitched metallic ring,44,0,0.8598,12.1127,8.4182
+glass,546667,Breaking Glass 07.wav,0,a long sustained shattering with debris,78,1,0.7481,12.1997,8.4238
+glass,546668,Breaking Glass 10.wav,0,a long sustained shattering with debris,78,1,0.8387,13.3246,7.6154
+glass,546669,Breaking Glass 02.wav,0,a long sustained shattering with debris,78,1,0.8985,12.2545,7.9472
+glass,546670,Breaking Glass 01.wav,0,a long sustained shattering with debris,78,1,0.8456,12.2038,8.2353
+glass,554563,Glass Shatter 3.wav,0,a long sustained shattering with debris,78,1,0.8719,10.9967,4.5528
+glass,554564,Glass Shatter 2.wav,0,a long sustained shattering with debris,78,1,0.9099,11.0388,4.7395
+glass,554565,Glass Shatter 1.wav,0,a long sustained shattering with debris,78,1,0.8738,10.934,4.851
+glass,554566,Glass Shatter  4.wav,0,a long sustained shattering with debris,78,1,0.8159,10.9031,4.5706
+glass,554568,Glass Shatter 7.wav,0,a long sustained shattering with debris,78,1,0.851,10.9547,4.6254
+glass,554569,Glass Shatter 6.wav,0,a long sustained shattering with debris,78,1,0.8714,10.8307,4.6171
+glass,554570,Glass Shatter 5.wav,0,a long sustained shattering with debris,78,1,0.847,10.9585,4.5013
+glass,559358,glass shattered in container sound effect,0,a long sustained shattering with debris,78,1,0.8592,11.251,5.027
+glass,560767,Breaking Glass 2,1,a single sharp instant crack,61,0,0.6427,10.1533,6.9404
+glass,560768,Breaking Glass 3,1,a single sharp instant crack,61,0,0.7144,10.2655,6.732
+glass,566197,Glass_Smash.wav,0,a long sustained shattering with debris,78,1,0.8828,13.1095,5.9508
+glass,583065,FX SaSc Glass Tiles Shatter Crash.wav,0,a long sustained shattering with debris,78,1,0.8344,11.2342,5.0238
+glass,593135,Glass Breaking.wav,1,a single sharp instant crack,61,0,0.5848,12.0069,4.342
+glass,654285,Glass bottle breaking.wav,0,a long sustained shattering with debris,78,1,0.8,11.2791,4.5048
+glass,660214,Heavy glass break 1,0,a long sustained shattering with debris,78,1,0.7644,13.7323,5.333
+glass,673770,Glass Breaking,1,a single sharp instant crack,61,0,0.7128,13.6367,5.4399
+glass,686849,glass shatter,2,a crunchy gritty texture,17,0,0.688,8.4442,9.5679
+glass,735003,Breaking Glass Jar on Cement,1,a single sharp instant crack,61,0,0.8575,13.6218,4.4034
+glass,758207,Glass panel shattering,0,a long sustained shattering with debris,78,1,0.7399,13.6473,7.4412
+glass,778586,Glass_Shards_Being_Moved_02,2,a crunchy gritty texture,17,0,0.7877,8.5897,9.9719
+glass,778587,Glass_Shards_Being_Moved_03,2,a crunchy gritty texture,17,0,0.8969,8.3521,9.792
+glass,778589,Glass_Shards_Being_Moved_05,2,a crunchy gritty texture,17,0,0.8668,8.1613,9.5675
+glass,778590,Glass_Shards_Being_Moved_06,2,a crunchy gritty texture,17,0,0.8863,8.3875,9.8182
+glass,778591,Glass_Shards_Being_Moved_07,2,a crunchy gritty texture,17,0,0.8541,8.257,9.7673
+glass,778592,Glass_Shards_Being_Moved_08,2,a crunchy gritty texture,17,0,0.8882,8.3057,9.7552
+glass,778594,Glass_Shards_Crunching_01,2,a crunchy gritty texture,17,0,0.7852,9.0468,10.2108
+glass,778595,Glass_Shards_Crunching_02,2,a crunchy gritty texture,17,0,0.8343,8.8747,10.103
+glass,778597,Glass_Shards_Crunching_04,2,a crunchy gritty texture,17,0,0.8382,8.9366,10.0689
+glass,778599,Glass_Shards_Crunching_06,2,a crunchy gritty texture,17,0,0.7354,8.9545,10.0651
+glass,778600,Glass_Shards_Crunching_07,2,a crunchy gritty texture,17,0,0.8532,8.8302,10.1334
+glass,778601,Glass_Shards_Crunching_08,1,a single sharp instant crack,61,0,0.4837,9.2548,10.3938
+glass,778604,Glass_Shards_Impact_01,3,a bright high-pitched metallic ring,44,0,0.8619,9.014,8.5934
+glass,778605,Glass_Shards_Impact_02,3,a bright high-pitched metallic ring,44,0,0.9291,9.212,8.1271
+glass,778606,Glass_Shards_Impact_03,3,a bright high-pitched metallic ring,44,0,0.8501,8.7012,8.9344
+glass,778607,Glass_Shards_Impact_04,3,a bright high-pitched metallic ring,44,0,0.9197,9.2171,8.1729
+glass,778608,Glass_Shards_Impact_05,3,a bright high-pitched metallic ring,44,0,0.8227,9.3592,7.882
+glass,784151,Glass break hammer,0,a long sustained shattering with debris,78,1,0.8613,11.2334,5.4408
+glass,814954,Ice Shatter SFX,1,a single sharp instant crack,61,0,0.7804,13.0317,3.3325
+glass,825803,Glass Bottle Shatter,1,a single sharp instant crack,61,0,0.8052,12.9039,3.1591
+glass,84705,Glass Breaking.wav,0,a long sustained shattering with debris,78,1,0.7409,13.6588,6.8687
+glass,848281,Glass Break 1,0,a long sustained shattering with debris,78,1,0.7737,12.7194,6.4033
+glass,848282,Glass Break 10,0,a long sustained shattering with debris,78,1,0.8934,12.9771,5.6883
+glass,848283,Glass Break 2,0,a long sustained shattering with debris,78,1,0.9177,12.1689,6.2981
+glass,848284,Glass Break 3,0,a long sustained shattering with debris,78,1,0.8291,12.7442,6.4655
+glass,848285,Glass Break 4,0,a long sustained shattering with debris,78,1,0.8944,11.8221,5.8401
+glass,848286,Glass Break 5,0,a long sustained shattering with debris,78,1,0.8533,12.4449,6.5256
+glass,848287,Glass Break 6,0,a long sustained shattering with debris,78,1,0.8841,12.1127,6.3397
+glass,848288,Glass Break 7,0,a long sustained shattering with debris,78,1,0.9256,11.8888,6.2942
+glass,848289,Glass Break 8,0,a long sustained shattering with debris,78,1,0.8177,13.6982,6.4346
+glass,848290,Glass Break 9,0,a long sustained shattering with debris,78,1,0.9186,12.0269,6.199
+glass,848312,Glass Smash,0,a long sustained shattering with debris,78,1,0.806,11.4432,6.1945
+glass,85168,jf Glass Breaking.wav,0,a long sustained shattering with debris,78,1,0.8192,11.0878,5.9932
+glass,85184,mp glass break.wav,0,a long sustained shattering with debris,78,1,0.7407,13.3538,6.8868
+glass,853695,Breaking Glass 1,3,a bright high-pitched metallic ring,44,0,0.9475,8.9267,8.2899
+glass,853696,Breaking Glass 2,3,a bright high-pitched metallic ring,44,0,0.8704,8.57,8.656
+glass,853697,Breaking Glass 3,3,a bright high-pitched metallic ring,44,0,0.9118,9.0599,8.383
+glass,853698,Breaking Glass 4,3,a bright high-pitched metallic ring,44,0,0.9034,8.5473,8.5224
+glass,853699,Breaking Glass 5,3,a bright high-pitched metallic ring,44,0,0.9025,8.5621,8.5073
+glass,853700,Breaking Glass 6,3,a bright high-pitched metallic ring,44,0,0.9409,8.5971,8.4551
+glass,853701,Breaking Glass 7,3,a bright high-pitched metallic ring,44,0,0.8854,8.5183,8.4737
+glass,853702,Breaking Glass 8,3,a bright high-pitched metallic ring,44,0,0.8225,8.345,8.7391
+glass,853703,Breaking Glass 9,2,a crunchy gritty texture,17,0,0.8461,8.2484,9.212
+glass,861042,Hard Glass Break 1,0,a long sustained shattering with debris,78,1,0.793,12.1608,5.8669
+glass,861043,Hard Glass Break 2,0,a long sustained shattering with debris,78,1,0.8938,12.0319,6.3936
+glass,861044,Hard Glass Break 3,0,a long sustained shattering with debris,78,1,0.7806,12.394,6.5382
+glass,977,RBH Glass_Break 01.wav,0,a long sustained shattering with debris,78,1,0.8375,10.4561,6.6048
+glass,978,RBH Glass_Break 02.wav,3,a bright high-pitched metallic ring,44,0,0.8109,9.6704,7.3693
+glass,979,RBH Glass_Break 03.wav,3,a bright high-pitched metallic ring,44,0,0.762,9.7329,7.3956
+glass,980,RBH Glass_Break 04.wav,0,a long sustained shattering with debris,78,1,0.7691,10.6905,6.4738
+glass,981,RBH Glass_Break 05.wav,3,a bright high-pitched metallic ring,44,0,0.7222,9.6246,7.5525
