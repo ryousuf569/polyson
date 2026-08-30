@@ -5,8 +5,10 @@ import json
 import os
 import subprocess
 import sys
+import re
 
 import numpy as np
+
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
@@ -19,8 +21,9 @@ STATS_PATH = os.path.join(OUT_DIR, "mel_stats.json")
 INDEX_PATH = os.path.join(OUT_DIR, "index.csv")
 LABELS_PATH = os.path.join(OUT_DIR, "labels.json")
 
-# Only subclasses with more than this many clips get preprocessed
-MIN_SUBCLASS_SIZE = 60
+# Subclasses need at least this many clips to be worth training on
+MIN_SUBCLASS_SIZE = 100
+EXCLUDED_SUBCLASSES = {"explosion_sub0", "whoosh_sub3"}
 
 # Mel settings, sized so 176 frames at hop 256 covers about 2.03 seconds
 SAMPLE_RATE = 22050
@@ -198,6 +201,12 @@ def subclass_key(row):
     return "%s_sub%s" % (row["class"], row["subclass"])
 
 
+# Readable folder name for a subclass, so the layout says what the clips are
+def subclass_dirname(row):
+    words = [w for w in re.split(r"[^a-z0-9]+", row["subclass_label"].lower()) if w]
+    return "sub%s_%s" % (row["subclass"], "_".join(words) or "unlabeled")
+
+
 # Read the subclass table and keep only rows from big enough subclasses
 def load_kept_rows(min_size):
     if not os.path.exists(SUBCLASS_CSV):
@@ -208,13 +217,19 @@ def load_kept_rows(min_size):
     for row in rows:
         key = (row["class"], row["subclass"])
         sizes[key] = sizes.get(key, 0) + 1
-    kept = [r for r in rows if sizes[(r["class"], r["subclass"])] > min_size]
-    dropped = sorted(k for k, v in sizes.items() if v <= min_size)
+
+    kept = [r for r in rows
+            if sizes[(r["class"], r["subclass"])] >= min_size
+            and subclass_key(r) not in EXCLUDED_SUBCLASSES]
+    small = sorted(k for k, v in sizes.items() if v < min_size)
     print("subclasses kept %d of %d, clips %d of %d"
-          % (len(sizes) - len(dropped), len(sizes), len(kept), len(rows)))
-    for class_name, subclass in dropped:
-        print("  dropped %s sub%s (n=%d)"
-              % (class_name, subclass, sizes[(class_name, subclass)]))
+          % (len(sizes) - len(small) - len(EXCLUDED_SUBCLASSES), len(sizes),
+             len(kept), len(rows)))
+    for class_name, subclass in small:
+        print("  dropped %s sub%s (n=%d, under %d)"
+              % (class_name, subclass, sizes[(class_name, subclass)], min_size))
+    for key in sorted(EXCLUDED_SUBCLASSES):
+        print("  excluded %s (duplicate label)" % key)
     return kept
 
 
@@ -307,8 +322,9 @@ def main():
             failed += 1
             continue
 
-        class_mel_dir = os.path.join(MEL_DIR, class_name)
-        class_clap_dir = os.path.join(CLAP_DIR, class_name)
+        sub_dir = subclass_dirname(row)
+        class_mel_dir = os.path.join(MEL_DIR, class_name, sub_dir)
+        class_clap_dir = os.path.join(CLAP_DIR, class_name, sub_dir)
         os.makedirs(class_mel_dir, exist_ok=True)
         os.makedirs(class_clap_dir, exist_ok=True)
         mel_path = os.path.join(class_mel_dir, "%s.npy" % sound_id)
