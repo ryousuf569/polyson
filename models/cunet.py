@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from models.diffusion import timestep_embedding
+
 
 class FiLM(nn.Module):
     def __init__(self, channels, cond_dim):
@@ -102,6 +104,12 @@ class ConditionalUNet(nn.Module):
                  channel_mults=(1, 2, 4, 4), cond_dim=128, attention_levels=(2, 3)):
         super().__init__()
         self.embedding = nn.Embedding(n_classes, cond_dim)
+        self.cond_dim = cond_dim
+        self.time_mlp = nn.Sequential(
+            nn.Linear(cond_dim, cond_dim),
+            nn.LeakyReLU(0.2),
+            nn.Linear(cond_dim, cond_dim),
+        )
         self.control = nn.Sequential(
             nn.Linear(cond_dim, cond_dim),
             nn.LeakyReLU(0.2),
@@ -136,8 +144,9 @@ class ConditionalUNet(nn.Module):
         nn.init.zeros_(self.out_conv.weight)
         nn.init.zeros_(self.out_conv.bias)
 
-    def forward(self, x, labels):
-        cond = self.control(self.embedding(labels))
+    def forward(self, x, t, labels):
+        cond = self.embedding(labels) + self.time_mlp(timestep_embedding(t, self.cond_dim))
+        cond = self.control(cond)
         h = self.stem(x)
         skips = []
         for block in self.downs:
