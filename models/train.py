@@ -23,6 +23,8 @@ LR = 2e-4
 EPOCHS = 200
 LOG_EVERY = 50
 SAVE_EVERY = 10
+PATIENCE = 20
+MIN_DELTA = 1e-3
 
 
 # One clean mel per clip, normalized to zero mean unit variance with the
@@ -45,11 +47,26 @@ class MelDataset(Dataset):
 
 
 # Standard DDPM training loop: diffusion.p_losses samples t and noise, builds
-# x_t in closed form, and returns MSE(eps_pred, eps) for one batch
-def train(diffusion, loader, optimizer, device, epochs, start_epoch=0, n_classes=None):
-
+# x_t in closed form, and returns MSE(eps_pred, eps) for one batch. Stops early
+# once the epoch loss stops improving, so an unattended run does not just keep
+# burning GPU hours after it has plateaued
+def train(diffusion, loader, optimizer, device, epochs, start_epoch=0, n_classes=None,
+         patience=PATIENCE, min_delta=MIN_DELTA):
     net = diffusion.model
     step = 0
+    best_loss = float("inf")
+    bad_epochs = 0
+
+    def save(epoch):
+        ckpt_path = os.path.join(CHECKPOINT_DIR, "cunet_epoch%d.pt" % (epoch + 1))
+        torch.save({
+            "model": net.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+            "n_classes": n_classes,
+        }, ckpt_path)
+        print("saved %s" % ckpt_path)
+
     for epoch in range(start_epoch, epochs):
         net.train()
         running = 0.0
@@ -68,17 +85,24 @@ def train(diffusion, loader, optimizer, device, epochs, start_epoch=0, n_classes
             if step % LOG_EVERY == 0:
                 print("epoch %d step %d loss %.4f" % (epoch, step, float(loss)))
 
-        print("epoch %d done, avg loss %.4f" % (epoch, running / len(loader)))
+        avg_loss = running / len(loader)
+        print("epoch %d done, avg loss %.4f" % (epoch, avg_loss))
+
+        if avg_loss < best_loss - min_delta:
+            best_loss = avg_loss
+            bad_epochs = 0
+        else:
+            bad_epochs += 1
+            print("no improvement for %d/%d epochs" % (bad_epochs, patience))
 
         if (epoch + 1) % SAVE_EVERY == 0 or epoch + 1 == epochs:
-            ckpt_path = os.path.join(CHECKPOINT_DIR, "cunet_epoch%d.pt" % (epoch + 1))
-            torch.save({
-                "model": net.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "epoch": epoch,
-                "n_classes": n_classes,
-            }, ckpt_path)
-            print("saved %s" % ckpt_path)
+            save(epoch)
+
+        if bad_epochs >= patience:
+            print("early stopping at epoch %d, best avg loss %.4f" % (epoch, best_loss))
+            if (epoch + 1) % SAVE_EVERY != 0:
+                save(epoch)
+            break
 
 
 def main():
@@ -87,10 +111,12 @@ def main():
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
     parser.add_argument("--lr", type=float, default=LR)
     parser.add_argument("--resume", default=None, help="checkpoint path to resume from")
+    parser.add_argument("--patience", type=int, default=PATIENCE)
+    parser.add_argument("--min-delta", type=float, default=MIN_DELTA)
     args = parser.parse_args()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print("device: %s" % device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
 
     labels = json.load(open(LABELS_PATH, encoding="utf-8"))
     dataset = MelDataset(INDEX_PATH, STATS_PATH)
@@ -110,7 +136,8 @@ def main():
         print("resumed from %s at epoch %d" % (args.resume, start_epoch))
 
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-    train(diffusion, loader, optimizer, device, args.epochs, start_epoch=start_epoch, n_classes=labels["n_subclasses"])
+    train(diffusion, loader, optimizer, device, args.epochs, start_epoch=start_epoch,
+         n_classes=labels["n_subclasses"], patience=args.patience, min_delta=args.min_delta)
 
 
 if __name__ == "__main__":
