@@ -21,7 +21,7 @@ from models.diffusion import (DDIM_ETA, DDIM_STEPS, DDIMSampler, GaussianDiffusi
 LABELS_PATH = os.path.join("data", "processed", "labels.json")
 STATS_PATH = os.path.join("data", "processed", "mel_stats.json")
 INDEX_PATH = os.path.join("data", "processed", "index.csv")
-CHECKPOINT_DEFAULT = os.path.join("models", "checkpoints", "cunet_epoch40.pt")
+CHECKPOINT_DEFAULT = os.path.join("models", "checkpoints", "cunet_epoch250.pt")
 OUT_DIR = os.path.join("models", "generated")
 PLOT_PATH = os.path.join(OUT_DIR, "real_vs_generated.png")
 
