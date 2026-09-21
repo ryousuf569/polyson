@@ -43,6 +43,13 @@ ONSET_OFFSET = 0.1
 ONSET_THRESHOLD = 0.15
 PEAK_LEVEL = 0.95
 LOG_FLOOR = 1e-5
+# Mels are stored raw, with only BigVGAN's 1e-5 clamp on them. The range the
+# trainer actually sees is cut from the top instead: everything more than
+# TOP_DB under the loudest frame in the corpus is clamped off, which on
+# peak-normalized audio puts the floor near -80 dBFS, ie below hearing.
+# These are natural logs of a magnitude, so one dB is log(10) / 20 of a unit
+TOP_DB = 80.0
+DB = float(np.log(10.0)) / 20.0
 
 # CLAP wants 48k audio and gives back one 512 dim vector per clip
 CLAP_MODEL = "laion/clap-htsat-unfused"
@@ -156,9 +163,9 @@ def load_clap():
     import torch
     from transformers import ClapModel, ClapProcessor
 
-    model = ClapModel.from_pretrained(CLAP_MODEL)
+    model = ClapModel.from_pretrained(CLAP_MODEL, token=False, use_safetensors=True)
     model.eval()
-    processor = ClapProcessor.from_pretrained(CLAP_MODEL)
+    processor = ClapProcessor.from_pretrained(CLAP_MODEL, token=False)
     torch.set_grad_enabled(False)
     return model, processor
 
@@ -233,6 +240,97 @@ def load_kept_rows(min_size):
     return kept
 
 
+# One pass over the stored mels for the moments and the corpus peak. The peak
+# is what the training range is measured down from, and it has to come from the
+# whole dataset rather than per clip or relative loudness gets flattened
+def scan_mels(paths):
+    # float64 so the totals do not drift over a few thousand clips
+    total = 0
+    mel_sum = 0.0
+    mel_sq_sum = 0.0
+    mel_max = -np.inf
+    for path in paths:
+        mel = np.load(path).astype(np.float64)
+        mel_sum += float(mel.sum())
+        mel_sq_sum += float((mel ** 2).sum())
+        mel_max = max(mel_max, float(mel.max()))
+        total += mel.size
+    mean = mel_sum / total
+    std = float(np.sqrt(max(mel_sq_sum / total - mean * mean, 0.0))) or 1.0
+    return mean, std, mel_max
+
+
+# What share of the corpus the training floor clamps away, which is the one
+# number that says whether TOP_DB is set somewhere sane
+def fraction_below(paths, floor):
+    below = 0
+    total = 0
+    for path in paths:
+        mel = np.load(path)
+        below += int((mel < floor).sum())
+        total += mel.size
+    return below / float(total)
+
+
+# mel_mean and mel_std are kept for check_mel.py and for reference. The trainer
+# reads mel_ref and mel_floor instead and min-max scales that window to [-1, 1]
+def build_stats(mean, std, mel_max, n_clips, n_subclasses, top_db=TOP_DB):
+    return {
+        "mel_mean": mean,
+        "mel_std": std,
+        "mel_ref": mel_max,
+        "mel_floor": mel_max - top_db * DB,
+        "top_db": top_db,
+        "n_mels": N_MELS,
+        "n_frames": N_FRAMES,
+        "sample_rate": SAMPLE_RATE,
+        "n_fft": N_FFT,
+        "hop_length": HOP,
+        "win_length": WIN,
+        "fmin": FMIN,
+        "fmax": FMAX,
+        "log_floor": LOG_FLOOR,
+        "onset_offset": ONSET_OFFSET,
+        "peak_level": PEAK_LEVEL,
+        "clip_samples": CLIP_SAMPLES,
+        "n_clips": n_clips,
+        "n_subclasses": n_subclasses,
+        "labels_path": LABELS_PATH,
+    }
+
+
+# Shared by a full run and a --stats-only rebuild so the two cannot disagree
+def write_stats(paths, n_subclasses, top_db=TOP_DB):
+    mean, std, mel_max = scan_mels(paths)
+    stats = build_stats(mean, std, mel_max, len(paths), n_subclasses, top_db)
+    with open(STATS_PATH, "w", encoding="utf-8") as handle:
+        json.dump(stats, handle, indent=2)
+    clamped = fraction_below(paths, stats["mel_floor"])
+    print("mel mean %.4f std %.4f over %d clips" % (mean, std, len(paths)))
+    print("training range [%.4f, %.4f], %.0f dB, clamps %.1f%% of the corpus"
+          % (stats["mel_floor"], stats["mel_ref"], top_db, 100.0 * clamped))
+    print("wrote %s" % STATS_PATH)
+    return stats
+
+
+# Rebuild mel_stats.json from the mels already on disk. Retuning TOP_DB only
+# needs this, not a full re-run over the source audio
+def recompute_stats(top_db=TOP_DB):
+    if not os.path.exists(INDEX_PATH) or not os.path.exists(LABELS_PATH):
+        print("no %s yet, run a full preprocess first" % INDEX_PATH, file=sys.stderr)
+        return 1
+    rows = list(csv.DictReader(open(INDEX_PATH, newline="", encoding="utf-8")))
+    labels = json.load(open(LABELS_PATH, encoding="utf-8"))
+    paths = [row["mel_path"] for row in rows]
+    missing = [path for path in paths if not os.path.exists(path)]
+    if missing:
+        print("%d mels named in the index are missing, eg %s"
+              % (len(missing), missing[0]), file=sys.stderr)
+        return 1
+    write_stats(paths, labels["n_subclasses"], top_db)
+    return 0
+
+
 # Preprocess every kept clip and write mels, CLAP vectors and the stats file
 def main():
     parser = argparse.ArgumentParser(description="Preprocess kept clips into log "
@@ -243,7 +341,16 @@ def main():
                         help="stop after this many clips, for a test run")
     parser.add_argument("--min-size", type=int, default=MIN_SUBCLASS_SIZE,
                         help="subclass size floor (default: %d)" % MIN_SUBCLASS_SIZE)
+    parser.add_argument("--stats-only", action="store_true", dest="stats_only",
+                        help="rebuild mel_stats.json from the mels already on "
+                             "disk, without touching the source audio")
+    parser.add_argument("--top-db", type=float, default=TOP_DB, dest="top_db",
+                        help="dynamic range kept under the corpus peak "
+                             "(default: %.0f)" % TOP_DB)
     args = parser.parse_args()
+
+    if args.stats_only:
+        return recompute_stats(args.top_db)
 
     rows = load_kept_rows(args.min_size)
     if not rows:
@@ -279,9 +386,6 @@ def main():
     window = np.hanning(WIN + 1)[:-1]
 
     index = []
-    mel_sum = 0.0
-    mel_sq_sum = 0.0
-    mel_count = 0
     no_onset = 0
     failed = 0
     batch_audio = []
@@ -331,12 +435,6 @@ def main():
         clap_path = os.path.join(class_clap_dir, "%s.npy" % sound_id)
         np.save(mel_path, mel)
 
-        # Accumulate in float64 so the global stats do not drift over 500 clips
-        mel64 = mel.astype(np.float64)
-        mel_sum += float(mel64.sum())
-        mel_sq_sum += float((mel64 ** 2).sum())
-        mel_count += mel64.size
-
         key = subclass_key(row)
         entry = {
             "class": class_name,
@@ -377,46 +475,20 @@ def main():
         print("no clips processed", file=sys.stderr)
         return 1
 
-    mean = mel_sum / mel_count
-    var = max(mel_sq_sum / mel_count - mean * mean, 0.0)
-    std = float(np.sqrt(var))
-    if std <= 0.0:
-        std = 1.0
-
     with open(INDEX_PATH, "w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=INDEX_HEADER)
         writer.writeheader()
         writer.writerows(index)
 
-    # Saved unnormalized so inference can invert the scaling before BigVGAN
-    stats = {
-        "mel_mean": mean,
-        "mel_std": std,
-        "n_mels": N_MELS,
-        "n_frames": N_FRAMES,
-        "sample_rate": SAMPLE_RATE,
-        "n_fft": N_FFT,
-        "hop_length": HOP,
-        "win_length": WIN,
-        "fmin": FMIN,
-        "fmax": FMAX,
-        "log_floor": LOG_FLOOR,
-        "onset_offset": ONSET_OFFSET,
-        "peak_level": PEAK_LEVEL,
-        "clip_samples": CLIP_SAMPLES,
-        "n_clips": len(index),
-        "n_subclasses": labels["n_subclasses"],
-        "labels_path": LABELS_PATH,
-    }
-    with open(STATS_PATH, "w", encoding="utf-8") as handle:
-        json.dump(stats, handle, indent=2)
-
     print("\nprocessed %d clips, %d failed" % (len(index), failed))
     print("no clear attack in %d clips, aligned from the start" % no_onset)
-    print("mel mean %.4f std %.4f over %d values" % (mean, std, mel_count))
     print("wrote %s" % INDEX_PATH)
-    print("wrote %s" % STATS_PATH)
     print("wrote %s" % LABELS_PATH)
+
+    # Mels are saved unnormalized, so the stats file is what lets training and
+    # inference agree on the scaling BigVGAN has to read back
+    write_stats([entry["mel_path"] for entry in index], labels["n_subclasses"],
+                args.top_db)
     return 0
 
 

@@ -10,7 +10,16 @@ SCHEDULE = "cosine"
 
 DDIM_STEPS = 50
 DDIM_ETA = 0.0
-CLIP_X0 = 3.0
+# Mels are min-max scaled onto [-1, 1], so the clamp actually binds during the
+# last denoising steps instead of sitting far outside the data range
+CLIP_X0 = 1.0
+
+# Classifier-free guidance, Ho and Salimans 2022 (arXiv:2207.12598). Dropping
+# the label on a fraction of training samples teaches one network both the
+# conditional and the unconditional score, and sampling extrapolates between
+# them so each subclass stops drifting toward the dataset average
+COND_DROPOUT = 0.1
+GUIDANCE_SCALE = 3.0
 
 class NoiseSchedule(nn.Module):
     def __init__(self, num_timesteps=1000, schedule="cosine", beta_start=1e-4, beta_end=0.02):
@@ -59,10 +68,33 @@ class NoiseSchedule(nn.Module):
         return torch.clamp(betas, max=max_beta)
 
 class GaussianDiffusion(nn.Module):
-    def __init__(self, model, schedule):
+    def __init__(self, model, schedule, cond_dropout=0.0):
         super().__init__()
         self.model = model
         self.schedule = schedule
+        self.cond_dropout = cond_dropout
+        # The row the model reserves for the unconditional branch. A model
+        # without one still trains, it just cannot be guided
+        self.null_label = getattr(model, "null_label", None)
+
+    # Replace a fraction of the labels with the null token, which is what gives
+    # the unconditional branch something to learn from
+    def drop_labels(self, labels):
+        if self.cond_dropout <= 0.0 or self.null_label is None:
+            return labels
+        drop = torch.rand(labels.shape, device=labels.device) < self.cond_dropout
+        return torch.where(drop, torch.full_like(labels, self.null_label), labels)
+
+    # The guided epsilon. Both branches ride in one batch rather than two
+    # separate forwards, and w = 1 collapses back to the plain conditional model
+    def predict_noise(self, x_t, t, labels, guidance=1.0):
+        if guidance == 1.0 or self.null_label is None:
+            return self.model(x_t, t, labels)
+        null = torch.full_like(labels, self.null_label)
+        both = self.model(torch.cat([x_t, x_t]), torch.cat([t, t]),
+                          torch.cat([labels, null]))
+        cond, uncond = both.chunk(2)
+        return uncond + guidance * (cond - uncond)
 
     def q_sample(self, x_0, t, noise=None):
         if noise is None:
@@ -87,6 +119,7 @@ class GaussianDiffusion(nn.Module):
         if noise is None:
             noise = torch.randn_like(x_0)
         x_t = self.q_sample(x_0, t, noise)
+        labels = self.drop_labels(labels)
         return F.mse_loss(self.model(x_t, t, labels), noise)
 
     def forward(self, x_0, labels):
@@ -97,14 +130,14 @@ class DDPMSampler():
         self.diffusion = diffusion
 
     @torch.no_grad()
-    def sample(self, labels, shape, device):
+    def sample(self, labels, shape, device, guidance=1.0):
         d = self.diffusion
         s = d.schedule
         x = torch.randn(shape, device=device)
 
         for step in reversed(range(s.num_timesteps)):
             t = torch.full((shape[0],), step, dtype=torch.long, device=device)
-            noise = d.model(x, t, labels)
+            noise = d.predict_noise(x, t, labels, guidance)
             x_0 = d.predict_x0_from_noise(x, t, noise)
 
             beta = s.extract(s.beta, t, x.shape)
@@ -129,7 +162,8 @@ class DDIMSampler():
         self.diffusion = diffusion
 
     @torch.no_grad()
-    def sample(self, labels, shape, device, num_steps=DDIM_STEPS, eta=DDIM_ETA):
+    def sample(self, labels, shape, device, num_steps=DDIM_STEPS, eta=DDIM_ETA,
+               guidance=1.0):
         d = self.diffusion
         s = d.schedule
         step_ratio = max(s.num_timesteps // num_steps, 1)
@@ -139,7 +173,7 @@ class DDIMSampler():
         for i, step in enumerate(timesteps):
             prev_step = timesteps[i + 1] if i + 1 < len(timesteps) else -1
             t = torch.full((shape[0],), step, dtype=torch.long, device=device)
-            noise = d.model(x, t, labels)
+            noise = d.predict_noise(x, t, labels, guidance)
             x_0 = d.predict_x0_from_noise(x, t, noise)
 
             alpha_bar = s.extract(s.alpha_bar, t, x.shape)
@@ -166,8 +200,13 @@ def timestep_embedding(t, dim):
     args = t[:, None].float() * freqs[None]
     return torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
 
-def normalize_mel(mel, mean, std):
-    return (mel - mean) / std
+# Clamp the log mel to a fixed dynamic range under the corpus peak, then
+# min-max that window onto [-1, 1]. The old z-score spent a third of the model
+# range on the stretch between the 1e-5 log floor and anything audible, and
+# left the data spanning [-1.1, 2.7] instead of the symmetric range DDPM
+# assumes. ref and floor both come from mel_stats.json
+def normalize_mel(mel, ref, floor):
+    return 2.0 * (mel.clip(floor, ref) - floor) / (ref - floor) - 1.0
 
-def denormalize_mel(mel, mean, std):
-    return mel * std + mean
+def denormalize_mel(mel, ref, floor):
+    return (mel.clip(-1.0, 1.0) + 1.0) * 0.5 * (ref - floor) + floor

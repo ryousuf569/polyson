@@ -103,7 +103,11 @@ class ConditionalUNet(nn.Module):
     def __init__(self, n_classes, in_channels=1, base_channels=64,
                  channel_mults=(1, 2, 4, 4), cond_dim=128, attention_levels=(2, 3)):
         super().__init__()
-        self.embedding = nn.Embedding(n_classes, cond_dim)
+        # One row past the real classes is the null token classifier-free
+        # guidance drops labels onto, so the unconditional branch shares every
+        # weight with the conditional one
+        self.null_label = n_classes
+        self.embedding = nn.Embedding(n_classes + 1, cond_dim)
         self.cond_dim = cond_dim
         self.time_mlp = nn.Sequential(
             nn.Linear(cond_dim, cond_dim),

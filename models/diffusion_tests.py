@@ -11,6 +11,10 @@ from models.diffusion import (DDIMSampler, DDPMSampler, GaussianDiffusion,
                               NoiseSchedule, denormalize_mel, normalize_mel,
                               timestep_embedding)
 
+# The range preprocess.py measures on the real corpus, near enough
+MEL_REF = 2.34
+MEL_FLOOR = MEL_REF - 80.0 * 0.11513
+
 TOL = 1e-4
 SHAPE = (4, 1, 32, 32)
 N_CLASSES = 4
@@ -273,14 +277,73 @@ def test_conditioning_is_live(net):
     torch.nn.init.zeros_(net.out_conv.weight)
 
 
-# Mel normalization has to invert exactly or the vocoder reads the wrong scale
+# Mel normalization has to invert exactly inside the kept range, or the vocoder
+# reads the wrong scale
 def test_mel_normalization():
-    mel = torch.randn(4, 1, 80, 176) * 3.65 - 7.35
-    back = denormalize_mel(normalize_mel(mel, -7.35, 3.65), -7.35, 3.65)
-    check("mel normalize round trip", close(mel, back, 1e-4))
-    norm = normalize_mel(mel, float(mel.mean()), float(mel.std()))
-    check("mel normalize centers", abs(float(norm.mean())) < 1e-5, "%.2e" % norm.mean())
-    check("mel normalize scales", abs(float(norm.std()) - 1.0) < 1e-4, "%.6f" % norm.std())
+    span = MEL_REF - MEL_FLOOR
+    inside = torch.rand(4, 1, 80, 176) * span + MEL_FLOOR
+    back = denormalize_mel(normalize_mel(inside, MEL_REF, MEL_FLOOR),
+                           MEL_REF, MEL_FLOOR)
+    check("mel normalize round trip", close(inside, back, 1e-4),
+          "max err %.2e" % float((inside - back).abs().max()))
+
+    norm = normalize_mel(inside, MEL_REF, MEL_FLOOR)
+    check("mel normalize lands in [-1, 1]", float(norm.abs().max()) <= 1.0 + 1e-6,
+          "max %.6f" % float(norm.abs().max()))
+    check("mel normalize spans the range",
+          float(norm.min()) < -0.9 and float(norm.max()) > 0.9,
+          "%.3f to %.3f" % (norm.min(), norm.max()))
+
+    # The 1e-5 log floor sits far under the training floor, and clamping it is
+    # the whole point: those values must not drag the scale down
+    quiet = torch.full((2, 1, 8, 8), -11.5129)
+    check("mel normalize clamps the log floor",
+          close(normalize_mel(quiet, MEL_REF, MEL_FLOOR), torch.full_like(quiet, -1.0)),
+          "%.6f" % float(normalize_mel(quiet, MEL_REF, MEL_FLOOR).max()))
+
+    loud = torch.full((2, 1, 8, 8), MEL_REF + 5.0)
+    check("mel normalize clamps above the peak",
+          close(normalize_mel(loud, MEL_REF, MEL_FLOOR), torch.full_like(loud, 1.0)))
+
+
+# Classifier-free guidance, Ho and Salimans 2022 eq 6: the guided epsilon is
+# eps_uncond + w * (eps_cond - eps_uncond), so w = 1 has to be the plain
+# conditional model and the null label has to reach the network
+def test_classifier_free_guidance(net):
+    labels = torch.arange(N_CLASSES)
+    x = torch.randn(*SHAPE)
+    t = torch.full((SHAPE[0],), 500, dtype=torch.long)
+
+    guided = GaussianDiffusion(net, NoiseSchedule(), cond_dropout=1.0)
+    check("null label is one past the classes", guided.null_label == N_CLASSES,
+          str(guided.null_label))
+
+    with torch.no_grad():
+        plain = guided.predict_noise(x, t, labels, guidance=1.0)
+        direct = net(x, t, labels)
+        check("guidance 1.0 is the conditional model", close(plain, direct))
+
+        null = torch.full_like(labels, guided.null_label)
+        uncond = net(x, t, null)
+        cond = net(x, t, labels)
+        for w in (2.0, 4.0):
+            want = uncond + w * (cond - uncond)
+            got = guided.predict_noise(x, t, labels, guidance=w)
+            check("guidance w=%.1f matches eq6" % w, close(want, got, 1e-5),
+                  "max diff %.2e" % float((want - got).abs().max()))
+
+    # Dropout at 1.0 sends every label to the null token, at 0.0 none of them
+    check("cond dropout at 1.0 nulls every label",
+          bool((guided.drop_labels(labels) == guided.null_label).all()))
+    plain_diffusion = GaussianDiffusion(net, NoiseSchedule(), cond_dropout=0.0)
+    check("cond dropout at 0.0 keeps every label",
+          bool((plain_diffusion.drop_labels(labels) == labels).all()))
+
+    torch.manual_seed(0)
+    many = torch.zeros(4000, dtype=torch.long)
+    dropped = GaussianDiffusion(net, NoiseSchedule(), cond_dropout=0.1)
+    rate = float((dropped.drop_labels(many) == dropped.null_label).float().mean())
+    check("cond dropout hits its rate", abs(rate - 0.1) < 0.02, "%.4f" % rate)
 
 
 def main():
@@ -311,6 +374,7 @@ def main():
     print("\nmodel plumbing")
     test_timestep_embedding()
     test_conditioning_is_live(net)
+    test_classifier_free_guidance(net)
     test_mel_normalization()
 
     print("\n%d passed, %d failed" % (len(passed), len(failed)))

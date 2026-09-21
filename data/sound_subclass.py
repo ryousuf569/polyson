@@ -62,9 +62,9 @@ def load_clap():
     import torch
     from transformers import ClapModel, ClapProcessor
 
-    model = ClapModel.from_pretrained(CLAP_MODEL)
+    model = ClapModel.from_pretrained(CLAP_MODEL, token=False, use_safetensors=True)
     model.eval()
-    processor = ClapProcessor.from_pretrained(CLAP_MODEL)
+    processor = ClapProcessor.from_pretrained(CLAP_MODEL, token=False)
     torch.set_grad_enabled(False)
     return model, processor
 

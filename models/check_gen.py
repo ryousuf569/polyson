@@ -1,5 +1,6 @@
 # python models/check_gen.py <subclass_tag> [--checkpoint PATH] [--steps N] [--n N] [--seed N]
 # python models/check_gen.py --compare [--per-class N] [--checkpoint PATH] [--seed N]
+# both forms take [--guidance W], the classifier-free guidance scale
 
 import argparse
 import csv
@@ -15,8 +16,8 @@ import torch
 sys.path.insert(0, ".")
 
 from models.cunet import ConditionalUNet
-from models.diffusion import (DDIM_ETA, DDIM_STEPS, DDIMSampler, GaussianDiffusion,
-                              NoiseSchedule, denormalize_mel)
+from models.diffusion import (DDIM_ETA, DDIM_STEPS, DDIMSampler, GUIDANCE_SCALE,
+                              GaussianDiffusion, NoiseSchedule, denormalize_mel)
 
 LABELS_PATH = os.path.join("data", "processed", "labels.json")
 STATS_PATH = os.path.join("data", "processed", "mel_stats.json")
@@ -31,10 +32,16 @@ PEAK_LEVEL = 0.95
 # How many clips per subclass the --compare sweep draws from each side
 COMPARE_PER_CLASS = 20
 
+# What a model that actually fits a subclass reaches on gen-vs-real CLAP cosine.
+# The real-vs-real bar is not the target: it is measured over clips that share a
+# label and nothing else, so it reads low even where the recordings are fine
+CLAP_TARGET = 0.65
+
 # Real and generated are two fixed identities, so they keep the same two colors
 # in every panel rather than being recolored per plot
 REAL_COLOR = "#3b6fb6"
 GEN_COLOR = "#c1663a"
+SPREAD_COLOR = "#7a8b99"
 
 # This checkpoint matches our mel settings exactly, fmax 8000 and hop 256
 BIGVGAN_MODEL = "nvidia/bigvgan_22khz_80band"
@@ -92,9 +99,9 @@ def decode_mel(model, mel):
 def load_clap():
     from transformers import ClapModel, ClapProcessor
 
-    model = ClapModel.from_pretrained(CLAP_MODEL)
+    model = ClapModel.from_pretrained(CLAP_MODEL, token=False, use_safetensors=True)
     model.eval()
-    processor = ClapProcessor.from_pretrained(CLAP_MODEL)
+    processor = ClapProcessor.from_pretrained(CLAP_MODEL, token=False)
     torch.set_grad_enabled(False)
     return model, processor
 
@@ -118,10 +125,11 @@ def embed_text(model, processor, texts):
 
 
 # Sample one batch of mels for a subclass with the DDIM sampler
-def generate(diffusion, class_idx, n, shape, device, steps, eta):
+def generate(diffusion, class_idx, n, shape, device, steps, eta, guidance=1.0):
     sampler = DDIMSampler(diffusion)
     labels = torch.full((n,), class_idx, dtype=torch.long, device=device)
-    return sampler.sample(labels, (n,) + shape, device, num_steps=steps, eta=eta)
+    return sampler.sample(labels, (n,) + shape, device, num_steps=steps, eta=eta,
+                          guidance=guidance)
 
 
 # CLAP's zero-shot fit check: embed the generated audio and every subclass's
@@ -165,13 +173,11 @@ def load_real_index():
     return by_subclass
 
 
-# Draw n real clips for a subclass, returning their mels and cached CLAP vectors.
-# Sampling without replacement, but a thin subclass just gives back what it has
+# Draw n real mels for a subclass. Sampling without replacement, but a thin
+# subclass just gives back what it has
 def sample_real(rows, n, rng):
     picked = rng.sample(rows, min(n, len(rows)))
-    mels = np.stack([np.load(row["mel_path"]) for row in picked])
-    claps = np.stack([np.load(row["clap_path"]) for row in picked])
-    return mels, claps
+    return np.stack([np.load(row["mel_path"]) for row in picked])
 
 
 # The per-mel-bin mean level, ie the average spectral envelope over a set of
@@ -205,9 +211,9 @@ def self_similarity(vecs):
     return float(sims[off_diagonal].mean())
 
 
-# Vocode a batch of generated mels and embed them with CLAP, so they land in the
-# same space as the cached real vectors from preprocessing
-def embed_generated(vocoder, clap_model, clap_processor, mels):
+# Vocode a batch of mels and embed them with CLAP. Real and generated mels both
+# go through here, so vocoder artifacts hit both sides of the comparison equally
+def embed_mels(vocoder, clap_model, clap_processor, mels):
     import librosa
 
     wavs = []
@@ -238,15 +244,22 @@ def collect_comparison(diffusion, vocoder, clap_model, clap_processor, labels,
              (args.per_class, min(args.per_class, len(rows))))
 
         x = generate(diffusion, labels["subclass_to_idx"][key], args.per_class,
-                     shape, device, args.steps, args.eta)
-        gen_mels = denormalize_mel(x, stats["mel_mean"],
-                                   stats["mel_std"]).cpu().numpy()[:, 0]
-        real_mels, real_claps = sample_real(rows, args.per_class, rng)
+                     shape, device, args.steps, args.eta, args.guidance)
+        gen_mels = denormalize_mel(x, stats["mel_ref"],
+                                   stats["mel_floor"]).cpu().numpy()[:, 0]
+        real_mels = sample_real(rows, args.per_class, rng)
 
-        gen_claps = embed_generated(vocoder, clap_model, clap_processor, gen_mels)
+        gen_claps = embed_mels(vocoder, clap_model, clap_processor, gen_mels)
+        real_claps = embed_mels(vocoder, clap_model, clap_processor, real_mels)
         cross = cross_similarity(gen_claps, real_claps)
         real_self = self_similarity(real_claps)
-        print("  CLAP gen-vs-real %.4f, real-vs-real %.4f" % (cross, real_self))
+        # The same spread measure, run over the generated side. A model that has
+        # collapsed to one average clip per subclass scores near 1.0 here, well
+        # above the real spread, which turns "the samples look flat" into a
+        # number to watch across retrains
+        gen_self = self_similarity(gen_claps)
+        print("  CLAP gen-vs-real %.4f, real-vs-real %.4f, gen-vs-gen %.4f"
+              % (cross, real_self, gen_self))
 
         results.append({
             "key": key,
@@ -256,6 +269,7 @@ def collect_comparison(diffusion, vocoder, clap_model, clap_processor, labels,
             "gen_mels": gen_mels,
             "cross": cross,
             "real_self": real_self,
+            "gen_self": gen_self,
         })
     return results
 
@@ -350,11 +364,15 @@ def plot_comparison(results, stats, out_path):
     ax = fig.add_subplot(grid[4, :])
     keys = [r["key"] for r in results]
     pos = np.arange(len(keys))
-    width = 0.38
-    ax.bar(pos - width / 2, [r["real_self"] for r in results], width,
-           color=REAL_COLOR, label="real vs real (ceiling)")
-    ax.bar(pos + width / 2, [r["cross"] for r in results], width,
+    width = 0.27
+    ax.bar(pos - width, [r["real_self"] for r in results], width,
+           color=REAL_COLOR, label="real vs real (spread)")
+    ax.bar(pos, [r["cross"] for r in results], width,
            color=GEN_COLOR, label="generated vs real")
+    ax.bar(pos + width, [r["gen_self"] for r in results], width,
+           color=SPREAD_COLOR, label="generated vs generated (spread)")
+    ax.axhline(CLAP_TARGET, color="#444444", linestyle="--", linewidth=1,
+               label="target %.2f" % CLAP_TARGET)
     ax.set_xticks(pos)
     ax.set_xticklabels(keys, rotation=45, ha="right", fontsize=7)
     ax.set_ylabel("mean CLAP cosine", fontsize=8)
@@ -371,18 +389,23 @@ def plot_comparison(results, stats, out_path):
 # Print the same numbers the plot shows, since a table is easier to diff between
 # checkpoints than a picture
 def print_summary(results):
-    print("\n%-16s %6s %6s %8s %8s %8s" %
-         ("subclass", "n_gen", "n_real", "gen~real", "real~real", "ratio"))
+    print("\n%-16s %6s %6s %8s %8s %8s %8s" %
+         ("subclass", "n_gen", "n_real", "gen~real", "real~real", "gen~gen",
+          "of %.2f" % CLAP_TARGET))
     for res in results:
-        ratio = res["cross"] / res["real_self"] if res["real_self"] else float("nan")
-        print("%-16s %6d %6d %8.4f %8.4f %8.2f" %
+        print("%-16s %6d %6d %8.4f %8.4f %8.4f %8.2f" %
              (res["key"], res["n_gen"], res["n_real"], res["cross"],
-              res["real_self"], ratio))
+              res["real_self"], res["gen_self"], res["cross"] / CLAP_TARGET))
 
     cross = float(np.mean([r["cross"] for r in results]))
-    ceiling = float(np.mean([r["real_self"] for r in results]))
-    print("\noverall gen-vs-real %.4f against a real-vs-real ceiling of %.4f "
-          "(%.0f%% of ceiling)" % (cross, ceiling, 100 * cross / ceiling))
+    real_self = float(np.mean([r["real_self"] for r in results]))
+    gen_self = float(np.mean([r["gen_self"] for r in results]))
+    print("\noverall gen-vs-real %.4f, %.0f%% of the %.2f a model that fits this "
+          "metric reaches" % (cross, 100 * cross / CLAP_TARGET, CLAP_TARGET))
+    # Generated spread sitting well above the real spread is mode collapse,
+    # whatever the gen-vs-real number happens to say
+    print("spread within a subclass: real %.4f, generated %.4f"
+          % (real_self, gen_self))
 
 
 # The --compare sweep: generate a batch for every subclass, hold each against an
@@ -427,12 +450,19 @@ def main():
     parser.add_argument("--checkpoint", default=CHECKPOINT_DEFAULT)
     parser.add_argument("--n", type=int, default=1, help="how many clips to generate")
     parser.add_argument("--steps", type=int, default=DDIM_STEPS)
+    parser.add_argument("--guidance", type=float, default=GUIDANCE_SCALE,
+                        help="classifier-free guidance scale, 1.0 turns it off "
+                             "(default: %.1f)" % GUIDANCE_SCALE)
     parser.add_argument("--eta", type=float, default=DDIM_ETA)
     parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
 
     labels = json.load(open(LABELS_PATH, encoding="utf-8"))
     stats = json.load(open(STATS_PATH, encoding="utf-8"))
+    if "mel_ref" not in stats:
+        print("%s predates the min-max normalization, rebuild it with: "
+              "python data/preprocess.py --stats-only" % STATS_PATH, file=sys.stderr)
+        return 1
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     if args.seed is not None:
@@ -454,10 +484,12 @@ def main():
     class_idx = labels["subclass_to_idx"][args.subclass]
     shape = (1, stats["n_mels"], stats["n_frames"])
 
-    print("sampling %d clip(s) of %s (%s), %d ddim steps..." %
-         (args.n, args.subclass, labels["subclass_description"][args.subclass], args.steps))
-    x = generate(diffusion, class_idx, args.n, shape, device, args.steps, args.eta)
-    mel = denormalize_mel(x, stats["mel_mean"], stats["mel_std"]).cpu().numpy()
+    print("sampling %d clip(s) of %s (%s), %d ddim steps, guidance %.1f..." %
+         (args.n, args.subclass, labels["subclass_description"][args.subclass],
+          args.steps, args.guidance))
+    x = generate(diffusion, class_idx, args.n, shape, device, args.steps, args.eta,
+                 args.guidance)
+    mel = denormalize_mel(x, stats["mel_ref"], stats["mel_floor"]).cpu().numpy()
 
     print("loading %s..." % BIGVGAN_MODEL)
     vocoder = load_bigvgan()

@@ -11,7 +11,8 @@ from torch.utils.data import DataLoader, Dataset
 sys.path.insert(0, ".")
 
 from models.cunet import ConditionalUNet
-from models.diffusion import GaussianDiffusion, NoiseSchedule, normalize_mel
+from models.diffusion import (COND_DROPOUT, GaussianDiffusion, NoiseSchedule,
+                              normalize_mel)
 
 INDEX_PATH = os.path.join("data", "processed", "index.csv")
 STATS_PATH = os.path.join("data", "processed", "mel_stats.json")
@@ -25,14 +26,17 @@ LOG_EVERY = 50
 SAVE_EVERY = 10
 
 
-# One clean mel per clip, normalized to zero mean unit variance with the
-# dataset-wide stats preprocess.py wrote, plus the subclass label for FiLM
+# One clean mel per clip, clamped to the dynamic range preprocess.py measured
+# and min-max scaled onto [-1, 1], plus the subclass label for FiLM
 class MelDataset(Dataset):
     def __init__(self, index_path, stats_path):
         self.rows = list(csv.DictReader(open(index_path, newline="", encoding="utf-8")))
         stats = json.load(open(stats_path, encoding="utf-8"))
-        self.mean = stats["mel_mean"]
-        self.std = stats["mel_std"]
+        if "mel_ref" not in stats:
+            raise SystemExit("%s predates the min-max normalization, rebuild it "
+                             "with: python data/preprocess.py --stats-only" % stats_path)
+        self.ref = stats["mel_ref"]
+        self.floor = stats["mel_floor"]
 
     def __len__(self):
         return len(self.rows)
@@ -40,7 +44,7 @@ class MelDataset(Dataset):
     def __getitem__(self, idx):
         row = self.rows[idx]
         mel = torch.from_numpy(np.load(row["mel_path"])).float().unsqueeze(0)
-        mel = normalize_mel(mel, self.mean, self.std)
+        mel = normalize_mel(mel, self.ref, self.floor)
         return mel, int(row["class_idx"])
 
 
@@ -89,6 +93,11 @@ def main():
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
     parser.add_argument("--lr", type=float, default=LR)
+    parser.add_argument("--cond-dropout", type=float, default=COND_DROPOUT,
+                        dest="cond_dropout",
+                        help="fraction of training labels replaced by the null "
+                             "token, for classifier-free guidance (default: %.2f)"
+                             % COND_DROPOUT)
     parser.add_argument("--resume", default=None, help="checkpoint path to resume from")
     args = parser.parse_args()
 
@@ -99,9 +108,13 @@ def main():
     dataset = MelDataset(INDEX_PATH, STATS_PATH)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, pin_memory=(device == "cuda"))
     print("%d clips, %d subclasses" % (len(dataset), labels["n_subclasses"]))
+    print("mel range [%.3f, %.3f] scaled to [-1, 1], label dropout %.2f"
+          % (dataset.floor, dataset.ref, args.cond_dropout))
 
     net = ConditionalUNet(n_classes=labels["n_subclasses"])
-    diffusion = GaussianDiffusion(net, NoiseSchedule()).to(device)
+    # Label dropout is what buys classifier-free guidance at sampling time
+    diffusion = GaussianDiffusion(net, NoiseSchedule(),
+                                  cond_dropout=args.cond_dropout).to(device)
     optimizer = torch.optim.AdamW(net.parameters(), lr=args.lr)
 
     start_epoch = 0
